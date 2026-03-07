@@ -2,7 +2,7 @@
 #define SYSTEM_H
 
 #include "../lib/CPU.h"
-#include "../lib/bus.h"
+#include "../lib/BUS.h"
 
 typedef struct system{
     CPU CPU;
@@ -14,9 +14,10 @@ void SYS_Init(System *system);
 
 
 // Load the rom into memory
-int SYS_LoadRom(Bus *bus, char *rom_name);
+int SYS_LoadRom(System *sys, char *rom_name);
 
-
+// Main system loop
+int SYS_MainLoop(System *system);
 
 
 

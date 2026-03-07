@@ -3,7 +3,7 @@
 #include <time.h>
 
 #include "../lib/CPU.h"
-#include "../lib/bus.h"
+#include "../lib/BUS.h"
 #include "../lib/system.h"
 
 #define FREQUENCY 1000
@@ -14,7 +14,9 @@ int main(int argc, char **argv){
     // Initialize the system before starting fetch-decode cycle
     SYS_Init(&sys);
 
-    
+    SYS_LoadRom(&sys, "rom.rom");
+
+    SYS_MainLoop(&sys);
 
 
 }

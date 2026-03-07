@@ -1,5 +1,5 @@
 #include "../lib/CPU.h"
-#include "../lib/bus.h"
+#include "../lib/BUS.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -9,11 +9,6 @@ void CPU_Init(CPU *cpu) {
     cpu->SR = SR_Interrupt;  
 }
 
-// Intialize the BUS
-void CPU_BusInti(Bus *bus) {
-    memset(bus->RAM, 0, 65536);
-}
-
 
 // Set the pc according to the reset vector
 void CPU_reset(CPU *cpu, Bus *bus) {
@@ -21,4 +16,12 @@ void CPU_reset(CPU *cpu, Bus *bus) {
     uint16_t prog = BUS_ReadAddr(bus, 0xFFFD) << 8;
     prog |= BUS_ReadAddr(bus, 0xFFFC);
     cpu->PC = prog;
+}
+
+
+// Fetch bytes from memory
+uint8_t CPU_FetchByte(CPU *cpu) {
+    uint8_t byte = BUS_ReadAddr(cpu->bus, cpu->PC);
+    cpu->PC++;
+    return byte;
 }

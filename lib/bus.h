@@ -18,7 +18,7 @@ enum {
 }Important_mem_addr;
 
 // Intialize the BUS 
-void Bus_Init(Bus *bus);
+void BUS_Init(Bus *bus);
 
 // Read bytes from memory
 uint8_t BUS_ReadAddr(Bus *bus, uint16_t addr);

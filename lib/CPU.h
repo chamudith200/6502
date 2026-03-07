@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "../lib/bus.h"
+
 // Structure of the 6502
 typedef struct {
     uint8_t AC;         // Accumulator
@@ -12,6 +14,7 @@ typedef struct {
     uint16_t PC;        // Program Counter
     uint8_t SP;         // Stack Pointer
     uint8_t SR;         // Status Register
+    Bus *bus;           // Pointer to the bus
 }CPU;
 
 
@@ -30,6 +33,10 @@ enum {
 // Initialize the CPU 
 void CPU_Init(CPU *cpu);
 
+// Set the pc according to the reset vector
+void CPU_reset(CPU *cpu, Bus *bus);
 
+// Fetch bytes from memory
+uint8_t CPU_FetchByte(CPU *cpu);
 
 #endif

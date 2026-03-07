@@ -1,6 +1,7 @@
-#include "../lib/bus.h"
+#include "../lib/BUS.h"
 
 #include <stdio.h>
+#include <string.h>
 
 // Intialize the BUS
 void BUS_Init(Bus *bus) {
