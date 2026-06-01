@@ -13,11 +13,23 @@
 #endif
 
 
-
 // cpu architecture
 uint16_t pc;
 uint8_t sp, x, y, a, status;
 uint8_t memory[65536];  // 64KB
+
+#define FLAG_CARRY  0x1
+#define FLAG_ZERO   0x2
+#define FLAG_ITRD   0x4
+#define FLAG_DECM   0x8
+#define FLAG_BREAK  0x10
+#define FLAG_OVRF   0x40
+#define FLAG_NEG    0x80
+
+#define SET_Z(val) {if (val == 0) status |= FLAG_ZERO; else status &= ~FLAG_ZERO;}
+#define SET_N(val) {if (val & 0x80) status |= FLAG_NEG; else status &= ~FLAG_NEG;}
+#define SET_ZN(val) {SET_Z(val) ; SET_N(val);}
+
 
 // helper vars
 uint8_t opcode;
@@ -140,6 +152,77 @@ static void execute(uint8_t opcode) {
             memory[addr] = a;
             break;
 
+        // LDX
+        case 0xA2:  // Load x, immediate
+            x = memory[pc++];
+            break;
+
+        case 0xA6:  // Load x, zero page
+            x = memory[memory[pc++]];
+            break;
+
+        case 0xB6:  // Load x, zero page, y
+            x = memory[(memory[pc++] + y) & 0xFF];
+            break;
+
+        case 0xAE:  // load x, absolute
+            clr_addr();
+            addr = memory[pc++];
+            addr |= memory[pc++] << 8;
+            x = memory[addr];
+            break;
+
+        case 0xBE:  // Load x, absolute, y
+            clr_addr();
+            addr = memory[pc++];
+            addr |= memory[pc++] << 8;
+            addr = (addr + y) & 0xFF;
+            x = memory[addr];
+            break;
+
+        // LDY
+        case 0xA0:  // Load y, immediate
+            y = memory[pc++];
+            break;
+
+        case 0xA4:  // Load y, zero page
+            y = memory[memory[pc++]];
+            break;
+
+        case 0xB4:  // Load y, zero page, x
+            y = memory[(memory[pc++] + x) & 0xFF];
+            break;
+
+        case 0xAC:  // load y, absolute
+            clr_addr();
+            addr = memory[pc++];
+            addr |= memory[pc++] << 8;
+            y = memory[addr];
+            break;
+
+        case 0xBC:  // Load y, absolute, x
+            clr_addr();
+            addr = memory[pc++];
+            addr |= memory[pc++] << 8;
+            addr = (addr + y) & 0xFF;
+            y = memory[addr];
+            break;
+
+        case 0x69:  // AddC immediate
+            a += memory[pc++];
+            SET_ZN(a);
+            break;
+
+        case 0x65:  // AddC zero page
+            a += memory[memory[pc++]];
+            SET_ZN(a);
+            break;
+
+        case 0x75:  // AddC zero page, x
+            a += memory[(memory[pc++] + x) & 0xFF];
+            SET_ZN(a);
+            break;
+
 
     }
 }
@@ -178,6 +261,29 @@ void tst_LDA() {
     memory[0x02B5] = 0xCC;
     memory[0xC] = 0xA1;
     memory[0xD] = 0x02;
+}
+
+
+// Load a ROM into the memory
+int loadROM(uint8_t *memory, const char *RomName) {
+    FILE *file = fopen(RomName, "rb");
+    if (!file) {
+        printf("Failed to open %s\n", RomName);
+        return 1;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long romLength = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // if (romLength > 256) {
+    //     printf("Program is too long (max size = 256 Bytes)\n");
+    //     return 2;
+    // }
+
+    fread(memory, romLength, 1, file);
+    fclose(file);
+    return 0;
 }
 
 

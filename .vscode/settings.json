@@ -3,5 +3,6 @@
         "*.embeddedhtml": "html",
         "bus.h": "c",
         "cpu.h": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

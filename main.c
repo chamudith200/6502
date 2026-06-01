@@ -12,6 +12,7 @@ int main() {
     int running = 1;
 
     tst_LDA();
+    // loadROM(memory, "test.rom");    
 
     step(); dbgInfo(); 
     step(); dbgInfo();
