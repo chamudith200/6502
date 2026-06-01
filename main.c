@@ -13,7 +13,14 @@ int main() {
 
     tst_LDA();
 
-    DO_STEPS(4);
+    step(); dbgInfo(); 
+    step(); dbgInfo();
+    step(); dbgInfo();
+    step(); dbgInfo();
+    x = 0x3;
+    step(); dbgInfo();
+    x = 0x2;
+    step(); dbgInfo();
 
 
     // while (running) {
