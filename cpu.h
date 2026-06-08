@@ -32,6 +32,13 @@ uint8_t memory[65536];  // 64KB
 #define SET_V(a, opr, result) {if (((a) ^ (result) & (opr) ^ (result)) & 0x80) status |= FLAG_OVRF; else status &= ~FLAG_OVRF;}
 #define SET_ZN(val) {SET_Z(val) ; SET_N(val);}
 
+#define CHECK_Z() ((status & FLAG_ZERO) != 0)
+#define CHECK_C() ((status & FLAG_CARRY) != 0)
+#define CHECK_N() ((status & FLAG_NEG) != 0)
+#define CHECK_V() ((status & FLAG_OVRF) != 0)
+// #define CHECK_C() ((status & FLAG_CARRY) != 0)
+
+
 
 // helper vars
 uint8_t opcode;
@@ -266,6 +273,56 @@ static void execute(uint8_t opcode) {
             SET_C(A, memory[addr]);
             SET_V(A, memory[addr], a);
             break;
+
+        case 0x61:  // AddC indirect, x
+            A = a;
+            a += memory[addr_indirect_x()];
+            SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
+            break;
+
+        case 0x71:  // AddC indirect, y
+            A = a;
+            a += memory[addr_indirect_y()];
+            SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
+            break;
+
+        // Branching
+        case 0xF0:  // Branch on result 0
+            if (CHECK_Z()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0xB0:  // Branch on Carry set
+            if (CHECK_C()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0x90:  // Branch on carry clear
+            if (!CHECK_C()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0x30:  // Branch on result negative
+            if (CHECK_N()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0xD0:  // Branch on result not zero
+            if (!CHECK_N()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0x10:  // Branch on result plus
+            if (!CHECK_N()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0x50:  // Branch on overflow clear
+            if (!CHECK_V()) pc += (int8_t)memory[pc++];
+            break;
+
+        case 0x70:  // Branch on overflow set
+            if (CHECK_V()) pc += (int8_t)memory[pc++];
+            break;
+
     }
 }
 
