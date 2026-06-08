@@ -46,6 +46,54 @@ uint16_t tmpX, tmpY;
     addr &= 0x00;\
 }
 
+// Helper funcs
+// addressing
+
+uint8_t addr_zero_page() {
+    return memory[pc++];
+}
+
+uint8_t addr_zero_page_x() {
+    return (memory[pc++] + x) & 0xFF;
+}
+
+uint8_t addr_zero_page_y() {
+    return (memory[pc++] + y) & 0xFF;
+}
+
+uint16_t addr_absolute() {
+    uint16_t tmp_addr = memory[pc++];
+    tmp_addr |= memory[pc++] << 8;
+    return tmp_addr;
+}
+
+uint16_t addr_absolute_x() {
+    uint16_t tmp_addr = memory[pc++];
+    tmp_addr |= memory[pc++] << 8;
+    return tmp_addr + x;
+}
+
+uint16_t addr_absolute_y() {
+    uint16_t tmp_addr = memory[pc++];
+    tmp_addr |= memory[pc++] << 8;
+    return tmp_addr + y;
+}
+
+uint16_t addr_indirect_x() {
+    uint8_t tmp_8_addr = memory[pc++] + x;
+    uint16_t tmp_addr = memory[tmp_8_addr];
+    tmp_addr |= memory[(tmp_8_addr + 1) & 0xFF] << 8;
+    return tmp_addr;
+}
+
+uint16_t addr_indirect_y() {
+    uint8_t tmp_8_addr = memory[pc++];
+    uint16_t tmp_addr = memory[tmp_8_addr];
+    tmp_addr |= memory[(tmp_8_addr + 1) & 0xFF] << 8;
+    return tmp_addr + y;
+}
+
+
 
 static void execute(uint8_t opcode) {
     switch (opcode) {
@@ -56,110 +104,67 @@ static void execute(uint8_t opcode) {
             break;
 
         case 0xA5:  // Load zero page
-            uint8_t ldz_addr = memory[pc++];
-            a = memory[ldz_addr];
+            a = memory[addr_zero_page()];
             SET_ZN(a);
             break;
 
         case 0xB5:  // Load zero page, X
-            uint8_t ldzp_addr = memory[pc++];
-            a = memory[(ldzp_addr + x) & 0xFF];
+            a = memory[addr_zero_page_x()];
             SET_ZN(a);
             break;
 
         case 0xAD:  // Load absolute
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            a = memory[addr];
+            a = memory[addr_absolute()];
             SET_ZN(a);
             break;
 
         case 0xBD:  // Load absolute, X
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            addr += x;
-            a = memory[addr];
+            a = memory[addr_absolute_x()];
             SET_ZN(a);
             break;
 
         case 0xB9:  // Load absolute, Y
-            clr_addr();
-            addr = memory[pc++];
-            addr  |= memory[pc++] << 8;
-            addr += y;
-            a = memory[addr];
+            a = memory[addr_absolute_y()];
             SET_ZN(a);
             break;
 
         case 0xA1:  // Load indirect, X
-            clr_addr();
-            uint8_t tmpAddr = memory[pc++];
-            addr = memory[(tmpAddr + x) & 0xFF];
-            addr |= memory[((tmpAddr + x) & 0xFF) + 1] << 8;
-            a = memory[addr];
+            a = memory[addr_indirect_x()];
             SET_ZN(a);
             break;
 
         case 0xB1:  // Load indirect, y
-            clr_addr();
-            tmpAddr = memory[pc++];
-            addr = memory[tmpAddr];
-            addr |= memory[(tmpAddr + 1) & 0xFF] << 8;
-            addr += y;
-            a = memory[addr];
+            a = memory[addr_indirect_y()];
             SET_ZN(a);
             break;
 
         // STA
         case 0x85:  // Store zero page
-            memory[memory[pc++]] = a;
+            memory[addr_zero_page()] = a;
             break;
         
         case 0x95:  // Store zero page, x
-            uint8_t szx_adr = memory[pc++];
-            memory[(szx_adr + x) & 0xFF] = a;
+            memory[addr_zero_page_x()] = a;
             break;
 
         case 0x8D:  // Store absolute
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            memory[addr] = a;
+            memory[addr_absolute()] = a;
             break;
 
         case 0x9D:  // Store absolute, x
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            addr += x;
-            memory[addr] = a;
+            memory[addr_absolute_x()] = a;
             break;
 
         case 0x99:  // Store absolute, y
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            addr += y;
-            memory[addr] = a;
+            memory[addr_absolute_y()] = a;
             break;
 
         case 0x81:  // Store indirect, x
-            clr_addr();
-            tmpAddr = memory[pc++] + x;
-            addr = memory[tmpAddr];
-            addr = memory[(tmpAddr + 1) & 0xFF] << 8;
-            memory[addr] = a;
+            memory[addr_indirect_x()] = a;
             break;
 
         case 0x91:  // Store indirect, y
-            clr_addr();
-            tmpAddr = memory[pc++];
-            addr = memory[tmpAddr];
-            addr = memory[(tmpAddr + 1) & 0xFF] << 8;
-            addr += y;
-            memory[addr] = a;
+            memory[addr_indirect_y()] = a;
             break;
 
         // LDX
@@ -169,29 +174,22 @@ static void execute(uint8_t opcode) {
             break;
 
         case 0xA6:  // Load x, zero page
-            x = memory[memory[pc++]];
+            x = memory[addr_zero_page()];
             SET_ZN(x);
             break;
 
         case 0xB6:  // Load x, zero page, y
-            x = memory[(memory[pc++] + y) & 0xFF];
+            x = memory[addr_zero_page_y()];
             SET_ZN(x);
             break;
 
         case 0xAE:  // load x, absolute
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            x = memory[addr];
+            x = memory[addr_absolute()];
             SET_ZN(x);
             break;
 
         case 0xBE:  // Load x, absolute, y
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            addr = (addr + y) & 0xFF;
-            x = memory[addr];
+            x = memory[addr_absolute_y()];
             SET_ZN(x);
             break;
 
@@ -202,50 +200,72 @@ static void execute(uint8_t opcode) {
             break;
 
         case 0xA4:  // Load y, zero page
-            y = memory[memory[pc++]];
+            y = memory[addr_zero_page()];
             SET_ZN(y);
             break;
 
         case 0xB4:  // Load y, zero page, x
-            y = memory[(memory[pc++] + x) & 0xFF];
+            y = memory[addr_zero_page_x()];
             SET_ZN(y);
             break;
 
         case 0xAC:  // load y, absolute
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            y = memory[addr];
+            y = memory[addr_absolute()];
             SET_ZN(y);
             break;
 
         case 0xBC:  // Load y, absolute, x
-            clr_addr();
-            addr = memory[pc++];
-            addr |= memory[pc++] << 8;
-            addr = (addr + y) & 0xFF;
-            y = memory[addr];
+            y = memory[addr_absolute_x()];
             SET_ZN(y);
             break;
 
         case 0x69:  // AddC immediate
-            SET_C(a, memory[pc + 1]);
+            uint8_t A = a;
             a += memory[pc++];
             SET_ZN(a);
-
+            SET_C(A, memory[pc]);
+            SET_V(A, memory[pc], a);
             break;
 
         case 0x65:  // AddC zero page
-            a += memory[memory[pc++]];
+            A = a;
+            a += memory[addr_zero_page()];
             SET_ZN(a);
+            SET_C(A, memory[pc]);
+            SET_V(A, memory[pc], a);
             break;
 
         case 0x75:  // AddC zero page, x
-            a += memory[(memory[pc++] + x) & 0xFF];
+            A = a;
+            a += memory[addr_zero_page_x()];
             SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
             break;
 
+        case 0x6D:  // Addc absolute
+            A = a;
+            a += memory[addr_absolute()];
+            SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
+            break;
 
+        case 0x7D:  // AddC absolute, x
+            A = a;
+            a += memory[addr_absolute_x()];
+            SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
+            break;
+
+        case 0x79:  // AddC absolute, y
+            A = a;
+            a += memory[addr_absolute_y()];
+            SET_ZN(a);
+            SET_C(A, memory[addr]);
+            SET_V(A, memory[addr], a);
+            break;
     }
 }
 
@@ -263,7 +283,7 @@ void tst_LDA() {
     memory[0x1] = 0x5D;
 
     memory[0x2] = 0xA5;
-    memory[0x3] = 0x00;
+    memory[0x3] = 0x05;
 
     memory[0x4] = 0xB5;
     memory[0x5] = 0x02;
