@@ -28,6 +28,8 @@ uint8_t memory[65536];  // 64KB
 
 #define SET_Z(val) {if (val == 0) status |= FLAG_ZERO; else status &= ~FLAG_ZERO;}
 #define SET_N(val) {if (val & 0x80) status |= FLAG_NEG; else status &= ~FLAG_NEG;}
+#define SET_C(a, opr) {if (((a) + (opr)) & 0x100) status|= FLAG_CARRY; else status &= !FLAG_CARRY;}
+#define SET_V(a, opr, result) {if (((a) ^ (result) & (opr) ^ (result)) & 0x80) status |= FLAG_OVRF; else status &= ~FLAG_OVRF;}
 #define SET_ZN(val) {SET_Z(val) ; SET_N(val);}
 
 
@@ -50,16 +52,19 @@ static void execute(uint8_t opcode) {
         // LDA
         case 0xA9:  // Load immidiate
             a = memory[pc++];
+            SET_ZN(a);
             break;
 
         case 0xA5:  // Load zero page
             uint8_t ldz_addr = memory[pc++];
             a = memory[ldz_addr];
+            SET_ZN(a);
             break;
 
         case 0xB5:  // Load zero page, X
             uint8_t ldzp_addr = memory[pc++];
             a = memory[(ldzp_addr + x) & 0xFF];
+            SET_ZN(a);
             break;
 
         case 0xAD:  // Load absolute
@@ -67,6 +72,7 @@ static void execute(uint8_t opcode) {
             addr = memory[pc++];
             addr |= memory[pc++] << 8;
             a = memory[addr];
+            SET_ZN(a);
             break;
 
         case 0xBD:  // Load absolute, X
@@ -75,6 +81,7 @@ static void execute(uint8_t opcode) {
             addr |= memory[pc++] << 8;
             addr += x;
             a = memory[addr];
+            SET_ZN(a);
             break;
 
         case 0xB9:  // Load absolute, Y
@@ -83,6 +90,7 @@ static void execute(uint8_t opcode) {
             addr  |= memory[pc++] << 8;
             addr += y;
             a = memory[addr];
+            SET_ZN(a);
             break;
 
         case 0xA1:  // Load indirect, X
@@ -91,6 +99,7 @@ static void execute(uint8_t opcode) {
             addr = memory[(tmpAddr + x) & 0xFF];
             addr |= memory[((tmpAddr + x) & 0xFF) + 1] << 8;
             a = memory[addr];
+            SET_ZN(a);
             break;
 
         case 0xB1:  // Load indirect, y
@@ -100,6 +109,7 @@ static void execute(uint8_t opcode) {
             addr |= memory[(tmpAddr + 1) & 0xFF] << 8;
             addr += y;
             a = memory[addr];
+            SET_ZN(a);
             break;
 
         // STA
@@ -155,14 +165,17 @@ static void execute(uint8_t opcode) {
         // LDX
         case 0xA2:  // Load x, immediate
             x = memory[pc++];
+            SET_ZN(x);
             break;
 
         case 0xA6:  // Load x, zero page
             x = memory[memory[pc++]];
+            SET_ZN(x);
             break;
 
         case 0xB6:  // Load x, zero page, y
             x = memory[(memory[pc++] + y) & 0xFF];
+            SET_ZN(x);
             break;
 
         case 0xAE:  // load x, absolute
@@ -170,6 +183,7 @@ static void execute(uint8_t opcode) {
             addr = memory[pc++];
             addr |= memory[pc++] << 8;
             x = memory[addr];
+            SET_ZN(x);
             break;
 
         case 0xBE:  // Load x, absolute, y
@@ -178,19 +192,23 @@ static void execute(uint8_t opcode) {
             addr |= memory[pc++] << 8;
             addr = (addr + y) & 0xFF;
             x = memory[addr];
+            SET_ZN(x);
             break;
 
         // LDY
         case 0xA0:  // Load y, immediate
             y = memory[pc++];
+            SET_ZN(y);
             break;
 
         case 0xA4:  // Load y, zero page
             y = memory[memory[pc++]];
+            SET_ZN(y);
             break;
 
         case 0xB4:  // Load y, zero page, x
             y = memory[(memory[pc++] + x) & 0xFF];
+            SET_ZN(y);
             break;
 
         case 0xAC:  // load y, absolute
@@ -198,6 +216,7 @@ static void execute(uint8_t opcode) {
             addr = memory[pc++];
             addr |= memory[pc++] << 8;
             y = memory[addr];
+            SET_ZN(y);
             break;
 
         case 0xBC:  // Load y, absolute, x
@@ -206,11 +225,14 @@ static void execute(uint8_t opcode) {
             addr |= memory[pc++] << 8;
             addr = (addr + y) & 0xFF;
             y = memory[addr];
+            SET_ZN(y);
             break;
 
         case 0x69:  // AddC immediate
+            SET_C(a, memory[pc + 1]);
             a += memory[pc++];
             SET_ZN(a);
+
             break;
 
         case 0x65:  // AddC zero page
